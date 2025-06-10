@@ -1,56 +1,123 @@
-import { useState } from 'react';
-import { ChartBarIcon, DocumentTextIcon, UserGroupIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
 
-const stats = [
-  { name: 'Total Job Descriptions', stat: '0', icon: DocumentTextIcon },
-  { name: 'CVs Processed', stat: '0', icon: UserGroupIcon },
-  { name: 'Matches Found', stat: '0', icon: ChartBarIcon },
-  { name: 'Pending Interviews', stat: '0', icon: CalendarIcon },
-];
+const Dashboard = () => {
+  const [candidates, setCandidates] = useState([]);
+  const [selectedMatch, setSelectedMatch] = useState(1);
+  const [matchData, setMatchData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export default function Dashboard() {
+  useEffect(() => {
+    fetchCandidates();
+  }, []);
+
+  useEffect(() => {
+    if (selectedMatch) {
+      fetchMatchData(selectedMatch);
+    }
+  }, [selectedMatch]);
+
+  const fetchCandidates = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/top-matches');
+      const data = await response.json();
+      if (data.status === "success") {
+        setCandidates(data.candidates);
+      } else {
+        console.error('Error fetching candidates:', data.detail);
+      }
+    } catch (error) {
+      console.error('Error fetching candidates:', error);
+    }
+  };
+
+  const fetchMatchData = async (matchNumber) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/results/${matchNumber}`);
+      const data = await response.json();
+      if (data.status === "success") {
+        setMatchData({
+          ...data,
+          graphUrl: `http://localhost:8000${data.graphUrl}`,
+          wordcloudUrl: `http://localhost:8000${data.wordcloudUrl}`
+        });
+      } else {
+        console.error('Error fetching match data:', data.detail);
+      }
+    } catch (error) {
+      console.error('Error fetching match data:', error);
+    }
+    setLoading(false);
+  };
+
   return (
-    <div>
-      <h2 className="text-2xl font-semibold text-gray-900 mb-8">Recruitment Dashboard</h2>
-      
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((item) => (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold mb-6 text-gray-800">Resume Match Dashboard</h1>
+
+      <div className="grid md:grid-cols-3 gap-4 mb-8">
+        {candidates.map((candidate, idx) => (
           <div
-            key={item.name}
-            className="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:pt-6"
+            key={idx}
+            onClick={() => setSelectedMatch(idx + 1)}
+            className={`cursor-pointer p-4 rounded-lg shadow-md transition-all duration-200 hover:shadow-xl ${
+              selectedMatch === idx + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-800'
+            }`}
           >
-            <dt>
-              <div className="absolute rounded-md bg-indigo-500 p-3">
-                <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">{item.name}</p>
-            </dt>
-            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
-              <p className="text-2xl font-semibold text-gray-900">{item.stat}</p>
-            </dd>
+            <h2 className="text-lg font-semibold">Match {idx + 1}</h2>
+            <p className="text-sm mt-1">{candidate.name}</p>
+            <p className="text-sm">Score: <span className="font-bold">{candidate.score}%</span></p>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg bg-white shadow">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900">Recent Job Descriptions</h3>
-            <div className="mt-6">
-              <p className="text-center text-gray-500 py-4">No job descriptions added yet</p>
+      {loading ? (
+        <div className="text-center text-gray-600 text-lg">Loading results...</div>
+      ) : matchData ? (
+        <div className="space-y-8">
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Match Graph</h2>
+              <img src={matchData.graphUrl} alt="Match Graph" className="w-full rounded-md" />
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Word Cloud</h2>
+              <img src={matchData.wordcloudUrl} alt="Word Cloud" className="w-full rounded-md" />
             </div>
           </div>
-        </div>
 
-        <div className="rounded-lg bg-white shadow">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900">Recent CV Matches</h3>
-            <div className="mt-6">
-              <p className="text-center text-gray-500 py-4">No matches found yet</p>
+          {/* Detailed Results Table */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Detailed Results</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border border-gray-200">
+                <thead>
+                  <tr className="bg-gray-100 text-left text-sm">
+                    <th className="px-4 py-2 border">Area</th>
+                    <th className="px-4 py-2 border">Match %</th>
+                    <th className="px-4 py-2 border">Matching Keywords</th>
+                    <th className="px-4 py-2 border">Missing Keywords</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matchData.results.map((result, index) => (
+                    <tr key={index} className="border-t">
+                      <td className="px-4 py-2 border">{result.Area}</td>
+                      <td className="px-4 py-2 border">{result['Match %']}%</td>
+                      <td className="px-4 py-2 border text-green-600">{result['Matching Keywords']}</td>
+                      <td className="px-4 py-2 border text-red-600">{result['Missing Keywords']}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-center text-gray-600">No data available</div>
+      )}
     </div>
   );
-} 
+};
+
+export default Dashboard;

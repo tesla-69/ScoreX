@@ -65,9 +65,9 @@ def process_candidate(resume_path, jd_areas):
     }
 
 def main():
-    resume_folder = "resume"
-    jd_csv_path = "jd.csv"
-    output_csv_path = "output.csv"
+    resume_folder = "../resume"
+    jd_csv_path = "../data/jd.csv"
+    output_csv_path = "../data/output.csv"
     jd_areas = read_jd_from_csv(jd_csv_path)
 
     # Process all PDFs in resume folder
@@ -79,11 +79,11 @@ def main():
 
     # Sort candidates by average match percentage and take top 3
     top_candidates = sorted(candidates, key=lambda x: -x['avg_match'])[:3]
-
-    # Create output folders for each top candidate
+# Create output folders under ../match/
     output_folders = []
+
     for i in range(1, 4):
-        folder = f"match{i}"
+        folder = os.path.join("..","data", "match", f"match{i}")  # ../match/match1, ../match/match2, etc.
         os.makedirs(folder, exist_ok=True)
         output_folders.append(folder)
         print(f"Created output folder: {folder}")
@@ -144,6 +144,46 @@ def main():
         plt.savefig(os.path.join(folder, f'graph.png'), dpi=300, bbox_inches='tight')
         plt.close()
         print(f"Bar chart for {candidate_name} saved to {folder}/graph.png")
+
+def generate_visualizations(matching_keywords, missing_keywords, candidate_name, results, output_folder):
+    """Generate visualizations for a resume"""
+    # Word clouds
+    matching_text = ' '.join(matching_keywords)
+    missing_text = ' '.join(missing_keywords)
+    if matching_text and missing_text:
+        plt.figure(figsize=(15, 6))
+        plt.subplot(1, 2, 1)
+        wc_match = WordCloud(width=600, height=400, background_color='white',
+                           colormap='Greens').generate(matching_text)
+        plt.imshow(wc_match, interpolation='bilinear')
+        plt.axis('off')
+        plt.title(f'Matching Keywords - {candidate_name}', fontsize=16, fontweight='bold')
+        plt.subplot(1, 2, 2)
+        wc_missing = WordCloud(width=600, height=400, background_color='white',
+                             colormap='Reds').generate(missing_text)
+        plt.imshow(wc_missing, interpolation='bilinear')
+        plt.axis('off')
+        plt.title(f'Missing Keywords - {candidate_name}', fontsize=16, fontweight='bold')
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_folder, 'wordcloud.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+
+    # Bar chart
+    df_results = pd.DataFrame(results)
+    plt.figure(figsize=(12, 8))
+    bars = plt.bar(df_results['Area'], df_results['Match %'], color='skyblue', edgecolor='navy', linewidth=1.2)
+    for bar, percentage in zip(bars, df_results['Match %']):
+        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                f'{percentage}%', ha='center', va='bottom', fontweight='bold')
+    plt.ylim(0, 100)
+    plt.ylabel('Match Percentage (%)', fontsize=12, fontweight='bold')
+    plt.xlabel('Job Description Fields', fontsize=12, fontweight='bold')
+    plt.title(f'Resume Match Percentage by JD Field - {candidate_name}', fontsize=14, fontweight='bold')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'graph.png'), dpi=300, bbox_inches='tight')
+    plt.close()
 
 if __name__ == "__main__":
     main()

@@ -29,8 +29,8 @@ class MatchResponse(BaseModel):
     graphUrl: str
     wordcloudUrl: str
 
-# Get the absolute path to the project root directory
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Get absolute path to ../data relative to current script
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 
 @app.get("/")
 async def root():
@@ -48,7 +48,7 @@ async def get_match_results(match_number: int):
             content={"status": "error", "detail": "Invalid match number"}
         )
     
-    match_folder = os.path.join(ROOT_DIR, f"match{match_number}")
+    match_folder = os.path.join(ROOT_DIR, f"match/match{match_number}")
     results_file = os.path.join(match_folder, 'results.csv')
     
     try:
@@ -86,7 +86,7 @@ async def get_graph(match_number: int):
             content={"status": "error", "detail": "Invalid match number"}
         )
     
-    file_path = os.path.join(ROOT_DIR, f"match{match_number}", "graph.png")
+    file_path = os.path.join(ROOT_DIR, f"match/match{match_number}", "graph.png")
     print(f"Serving graph from: {file_path}")
     
     if not os.path.exists(file_path):
@@ -105,7 +105,7 @@ async def get_wordcloud(match_number: int):
             content={"status": "error", "detail": "Invalid match number"}
         )
     
-    file_path = os.path.join(ROOT_DIR, f"match{match_number}", "wordcloud.png")
+    file_path = os.path.join(ROOT_DIR, f"match/match{match_number}", "wordcloud.png")
     print(f"Serving wordcloud from: {file_path}")
     
     if not os.path.exists(file_path):
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     print(f"Checking files:")
     print(f"output.csv exists: {os.path.exists(os.path.join(ROOT_DIR, 'output.csv'))}")
     for i in range(1, 4):
-        match_dir = os.path.join(ROOT_DIR, f"match{i}")
+        match_dir = os.path.join(ROOT_DIR, f"match/match{i}")
         print(f"match{i} exists: {os.path.exists(match_dir)}")
         if os.path.exists(match_dir):
             print(f"  results.csv exists: {os.path.exists(os.path.join(match_dir, 'results.csv'))}")
