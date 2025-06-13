@@ -1,18 +1,23 @@
 # script.py
 import subprocess
 import time
+import os
+import sys
 
-# Start model.py first
-model_process = subprocess.Popen(["python3", "../model/model.py"])
-print("Started model.py...")
+def run_model():
+    # Get the absolute path to the model directory
+    model_dir = os.path.join(os.path.dirname(__file__), '..', 'model')
+    
+    # Change to the model directory
+    os.chdir(model_dir)
+    
+    # Run model.py
+    try:
+        subprocess.run([sys.executable, "model.py"], check=True)
+        print("Model processing completed successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"Error running model.py: {e}")
+        sys.exit(1)
 
-# Optional: wait a bit or check if model.py is ready
-time.sleep(5)  # Adjust this delay as needed
-
-# Now start app.py
-app_process = subprocess.Popen(["python3", "../app/app.py"])
-print("Started app.py...")
-
-# Optional: keep script running while both processes are alive
-model_process.wait()
-app_process.wait()
+if __name__ == "__main__":
+    run_model()
