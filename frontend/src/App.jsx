@@ -1,36 +1,17 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Fragment } from 'react';
-import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline';
-import Dashboard from './components/Dashboard';
-import ResumeJDUploader from './components/Input';
-
-const navigation = [
-  { name: 'Dashboard', href: '/' },
-  { name: 'Job Descriptions', href: '/jobs' },
-  { name: 'CV Management', href: '/cvs' },
-  { name: 'Resume Matches', href: '/matches' },
-  { name: 'Interviews', href: '/interviews' },
-];
-
-function classNames(...classes) {
-  return classes.filter(Boolean).join(' ');
-}
-
-function AppContent() {
-  const location = useLocation();
-
-  return (
-    
-      <div><ResumeJDUploader/></div>
-  );
-}
+import React from 'react';
+import ResumeUploader from './components/ResumeUploader';
+import './App.css';
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <div className="App">
+      <header className="App-header">
+        <h1>Resume Parser</h1>
+      </header>
+      <main>
+        <ResumeUploader />
+      </main>
+    </div>
   );
 }
 

@@ -118,3 +118,30 @@ dist
 .pnp.*
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
+
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+.env
+.venv/
+
+# System
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Test and coverage
+.pytest_cache/
+htmlcov/
+.coverage

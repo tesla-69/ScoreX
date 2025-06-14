@@ -6,7 +6,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
-from mongo_utils import get_resumes_from_mongodb, cleanup_temp_files
+from mongo_utils import get_resumes_from_mongodb, cleanup_temp_files, get_unprocessed_resumes, get_latest_job_description, mark_resume_processed, mark_job_description_processed
+import tempfile
+import sys
+import traceback # Import traceback for detailed error logging
 
 def extract_text_from_pdf(pdf_path):
     with open(pdf_path, 'rb') as file:
@@ -18,7 +21,15 @@ def preprocess(text):
     return re.sub(r'\s+', ' ', text).strip()
 
 def read_jd_from_csv(csv_path):
-    df = pd.read_csv(csv_path)
+    try:
+        df = pd.read_csv(csv_path, encoding='utf-8')
+    except UnicodeDecodeError:
+        df = pd.read_csv(csv_path, encoding='latin-1') # Try common alternative encoding
+    except Exception as e:
+        print(f"Error reading JD CSV file: {e}")
+        raise # Re-raise if it's another error
+    
+    # Filter and create a dictionary from specific fields as needed for your model
     return {row["Field"]: row["Details"] for _, row in df.iterrows() 
             if row["Field"] in ["Job Description", "Key Responsibilities", 
                                "Required Qualifications", "Preferred Qualifications"]}
@@ -66,60 +77,92 @@ def process_candidate(resume_data, jd_areas):
         "missing_keywords": all_missing_keywords
     }
 
-def main():
-    jd_csv_path = "../data/jd.csv"
-    output_csv_path = "../data/output.csv"
-    jd_areas = read_jd_from_csv(jd_csv_path)
-
-    # Get resumes from MongoDB
-    resumes = get_resumes_from_mongodb()
-    
+def process_resumes():
+    """Process resumes from MongoDB and generate results"""
     try:
-        # Process all resumes from MongoDB
-        candidates = []
-        for resume_data in resumes:
-            candidates.append(process_candidate(resume_data, jd_areas))
+        # Get unprocessed resumes and latest job description using mongo_utils
+        resumes = get_unprocessed_resumes()
+        job_description = get_latest_job_description()
+        
+        if not resumes or not job_description:
+            print("No unprocessed resumes or job description found")
+            return False
+            
+        # Create temporary directory for processing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Save job description to temp file (as CSV)
+            jd_path = os.path.join(temp_dir, "job_description.csv")
+            with open(jd_path, "wb") as f:
+                f.write(job_description["data"])
+            
+            # Save resumes to temp files
+            resume_paths = []
+            for resume in resumes:
+                resume_path = os.path.join(temp_dir, resume["filename"])
+                with open(resume_path, "wb") as f:
+                    f.write(resume["data"])
+                resume_paths.append(resume_path)
+            
+            # Read JD areas from the uploaded CSV
+            jd_areas = read_jd_from_csv(jd_path)
+            
+            # Process resumes
+            candidates = []
+            for resume_data, resume_path in zip(resumes, resume_paths):
+                candidate_data = {
+                    'file_path': resume_path,
+                    'filename': resume_data['filename']
+                }
+                candidates.append(process_candidate(candidate_data, jd_areas))
+            
+            # Sort candidates by average match percentage and take top 3
+            top_candidates = sorted(candidates, key=lambda x: -x['avg_match'])[:3]
+            
+            # Create output folders under ../data/match/
+            output_folders = []
+            for i in range(1, 4):
+                folder = os.path.join("..","data", "match", f"match{i}")
+                os.makedirs(folder, exist_ok=True)
+                output_folders.append(folder)
+                print(f"Created output folder: {folder}")
+            
+            # Save combined results for top 3 to CSV
+            all_results = []
+            for idx, candidate in enumerate(top_candidates):
+                for result in candidate['results']:
+                    all_results.append({
+                        "Candidate": candidate['filename'],
+                        **result
+                    })
+            pd.DataFrame(all_results).to_csv(os.path.join("..", "data", "output.csv"), index=False)
+            print(f"Combined results saved to ../data/output.csv")
+            
+            # Save individual candidate results and generate visualizations
+            for idx, (candidate, folder) in enumerate(zip(top_candidates, output_folders), 1):
+                candidate_name = candidate['filename']
+                pd.DataFrame(candidate['results']).to_csv(os.path.join(folder, f"results.csv"), index=False)
+                print(f"Individual results for {candidate_name} saved to {folder}/results.csv")
 
-        # Sort candidates by average match percentage and take top 3
-        top_candidates = sorted(candidates, key=lambda x: -x['avg_match'])[:3]
+                # Generate visualizations
+                generate_visualizations(
+                    candidate['matching_keywords'],
+                    candidate['missing_keywords'],
+                    candidate_name,
+                    candidate['results'],
+                    folder
+                )
 
-        # Create output folders under ../match/
-        output_folders = []
-        for i in range(1, 4):
-            folder = os.path.join("..","data", "match", f"match{i}")
-            os.makedirs(folder, exist_ok=True)
-            output_folders.append(folder)
-            print(f"Created output folder: {folder}")
-
-        # Save combined results for top 3 to CSV
-        all_results = []
-        for idx, candidate in enumerate(top_candidates):
-            for result in candidate['results']:
-                all_results.append({
-                    "Candidate": candidate['filename'],
-                    **result
-                })
-        pd.DataFrame(all_results).to_csv(output_csv_path, index=False)
-        print(f"Combined results saved to {output_csv_path}")
-
-        # Save individual candidate results and generate visualizations
-        for idx, (candidate, folder) in enumerate(zip(top_candidates, output_folders), 1):
-            candidate_name = candidate['filename']
-            pd.DataFrame(candidate['results']).to_csv(os.path.join(folder, f"results.csv"), index=False)
-            print(f"Individual results for {candidate_name} saved to {folder}/results.csv")
-
-            # Generate visualizations
-            generate_visualizations(
-                candidate['matching_keywords'],
-                candidate['missing_keywords'],
-                candidate_name,
-                candidate['results'],
-                folder
-            )
-
-    finally:
-        # Clean up temporary files
-        cleanup_temp_files(resumes)
+            # Mark resumes and job description as processed using mongo_utils
+            for resume in resumes:
+                mark_resume_processed(resume['_id'])
+            mark_job_description_processed(job_description['_id'])
+            
+            return True
+            
+    except Exception as e:
+        print(f"Error in process_resumes: {str(e)}")
+        traceback.print_exc()
+        return False
 
 def generate_visualizations(matching_keywords, missing_keywords, candidate_name, results, output_folder):
     """Generate visualizations for a resume"""
@@ -162,4 +205,5 @@ def generate_visualizations(matching_keywords, missing_keywords, candidate_name,
     plt.close()
 
 if __name__ == "__main__":
-    main()
+    success = process_resumes()
+    sys.exit(0 if success else 1)

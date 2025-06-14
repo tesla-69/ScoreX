@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -6,6 +6,11 @@ import pandas as pd
 import os
 from typing import List, Dict, Any
 from pydantic import BaseModel
+from . import db
+import subprocess
+import sys
+import asyncio
+import traceback
 
 app = FastAPI(title="Resume Parser API")
 
@@ -31,6 +36,86 @@ class MatchResponse(BaseModel):
 
 # Get absolute path to ../data relative to current script
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+
+async def run_model():
+    """Run the model processing script"""
+    try:
+        # Get the absolute path to the model directory
+        model_dir = os.path.join(os.path.dirname(__file__), "..", "model")
+        
+        # Run model.py as a subprocess, ensuring it executes from the correct directory
+        print(f"Attempting to run model.py from directory: {model_dir}")
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, "model.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=model_dir # Set the working directory for the subprocess
+        )
+        
+        stdout, stderr = await process.communicate()
+        
+        stdout_decoded = stdout.decode().strip()
+        stderr_decoded = stderr.decode().strip()
+        
+        print(f"model.py stdout:\n{stdout_decoded}")
+        print(f"model.py stderr:\n{stderr_decoded}")
+        print(f"model.py return code: {process.returncode}")
+
+        if process.returncode != 0:
+            # If there's an error and stderr has content, print it more clearly
+            if stderr_decoded:
+                print(f"Error running model.py: {stderr_decoded}")
+            else:
+                print(f"model.py exited with non-zero code {process.returncode} but no stderr output.")
+            return False
+            
+        print("Model processing completed successfully via FastAPI background task")
+        return True
+        
+    except Exception as e:
+        print(f"Error in run_model (subprocess execution): {str(e)}")
+        traceback.print_exc() # Added for detailed traceback
+        return False
+
+@app.post("/api/upload/resume")
+async def upload_resume(file: UploadFile = File(...)):
+    """Upload a resume file"""
+    try:
+        contents = await file.read()
+        resume_id = await db.save_resume(contents, file.filename, file.content_type)
+        return {"status": "success", "message": "Resume uploaded successfully", "id": str(resume_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/upload/job-description")
+async def upload_job_description(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    """Upload a job description and trigger model processing"""
+    try:
+        contents = await file.read()
+        jd_id = await db.save_job_description(contents, file.filename, file.content_type)
+        
+        # Trigger model processing in background
+        background_tasks.add_task(run_model)
+        
+        return {"status": "success", "message": "Job description uploaded and processing started", "id": str(jd_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/processing-status")
+async def get_processing_status():
+    """Get the current processing status"""
+    try:
+        unprocessed_resumes = len(db.get_unprocessed_resumes())
+        latest_jd = db.get_latest_job_description()
+        
+        return {
+            "status": "success",
+            "unprocessed_resumes": unprocessed_resumes,
+            "has_job_description": latest_jd is not None,
+            "is_processing": unprocessed_resumes > 0 and latest_jd is not None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 async def root():
