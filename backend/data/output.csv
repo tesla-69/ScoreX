@@ -1,4 +1,5 @@
 Candidate,Area,Match %,Matching Keywords,Missing Keywords
+<<<<<<< HEAD
 Resume_Cisco (1).pdf,Job Description,63.36,"software, systems, development, support, solutions","engineers, iii, teams, sde, understanding"
 Resume_Cisco (1).pdf,Key Responsibilities,84.59,"technical, technologies, software, code, development","security, deployment, collaborate, documentation, including"
 Resume_Cisco (1).pdf,Required Qualifications,76.49,"systems, experience, bachelor, software, skills","master, sql, strong, testing, ability"
@@ -11,3 +12,17 @@ Resume.pdf,Job Description,58.19,"software, systems, development, technical, sca
 Resume.pdf,Key Responsibilities,75.79,"technical, technologies, software, code, development","collaborate, documentation, including, solutions, managers"
 Resume.pdf,Required Qualifications,69.64,"systems, bachelor, sql, software, skills","experience, master, strong, ability, complex"
 Resume.pdf,Preferred Qualifications,77.78,"development, technologies, systems, react","experience, work, vuejs, source, understanding"
+=======
+NIT_Bhopal_Resume__Copy___Copy_ (4).pdf,Job Description,61.87,"software, systems, development, solutions, technical","engineers, iii, teams, support, sde"
+NIT_Bhopal_Resume__Copy___Copy_ (4).pdf,Key Responsibilities,83.92,"technical, technologies, software, code, development","deployment, collaborate, documentation, including, testing"
+NIT_Bhopal_Resume__Copy___Copy_ (4).pdf,Required Qualifications,76.46,"systems, experience, bachelor, software, skills","master, sql, testing, ability, complex"
+NIT_Bhopal_Resume__Copy___Copy_ (4).pdf,Preferred Qualifications,77.97,"experience, development, technologies, systems, react","work, vuejs, source, understanding, tech"
+Anshika.jain.resume.pdf,Job Description,61.93,"systems, development, technical","software, engineers, iii, teams, support"
+Anshika.jain.resume.pdf,Key Responsibilities,87.12,"technical, technologies, code, development, application","software, security, deployment, collaborate, documentation"
+Anshika.jain.resume.pdf,Required Qualifications,74.33,"systems, experience, bachelor, skills, science","master, sql, software, strong, testing"
+Anshika.jain.resume.pdf,Preferred Qualifications,75.7,"experience, development, technologies, work, systems","vuejs, source, understanding, tech, regulatory"
+Sameeksha_Prusty_Resume.pdf,Job Description,58.73,technical,"software, systems, engineers, iii, development"
+Sameeksha_Prusty_Resume.pdf,Key Responsibilities,87.16,"technical, technologies, code, tools","software, development, security, deployment, collaborate"
+Sameeksha_Prusty_Resume.pdf,Required Qualifications,70.85,"experience, skills, science, technical, technology","systems, bachelor, master, sql, software"
+Sameeksha_Prusty_Resume.pdf,Preferred Qualifications,73.17,"experience, technologies, work, tech","development, vuejs, systems, source, understanding"
+>>>>>>> 597ccf41dd54ec10daf12d0a71636f27cedcd518

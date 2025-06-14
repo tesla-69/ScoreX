@@ -117,6 +117,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+<<<<<<< HEAD
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
 
 
@@ -145,3 +146,6 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+=======
+# End of https://mrkandreev.name/snippets/gitignore-generator/#Node
+>>>>>>> 597ccf41dd54ec10daf12d0a71636f27cedcd518

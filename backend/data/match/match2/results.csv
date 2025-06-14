@@ -1,5 +1,12 @@
 Area,Match %,Matching Keywords,Missing Keywords
+<<<<<<< HEAD
 Job Description,63.36,"software, systems, development, support, solutions","engineers, iii, teams, sde, understanding"
 Key Responsibilities,84.59,"technical, technologies, software, code, development","security, deployment, collaborate, documentation, including"
 Required Qualifications,76.49,"systems, experience, bachelor, software, skills","master, sql, strong, testing, ability"
 Preferred Qualifications,79.34,"experience, development, technologies, systems, react","work, vuejs, source, understanding, tech"
+=======
+Job Description,61.93,"systems, development, technical","software, engineers, iii, teams, support"
+Key Responsibilities,87.12,"technical, technologies, code, development, application","software, security, deployment, collaborate, documentation"
+Required Qualifications,74.33,"systems, experience, bachelor, skills, science","master, sql, software, strong, testing"
+Preferred Qualifications,75.7,"experience, development, technologies, work, systems","vuejs, source, understanding, tech, regulatory"
+>>>>>>> 597ccf41dd54ec10daf12d0a71636f27cedcd518
